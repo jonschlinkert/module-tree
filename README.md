@@ -71,7 +71,7 @@ Only apply coloring to packages that match the given regex pattern (make sure to
 
 ```sh
 # apply coloring to package names that begin with "is-"
-$ treee -c="is-.*"
+$ tree -c="is-.*"
 ```
 
 Results in something like:
