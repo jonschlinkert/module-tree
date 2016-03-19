@@ -1,0 +1,12 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": "",
+  "description": "",
+  "private": true,
+  "dependencies": {
+    "async": "^2.0.0-rc.1",
+    "chalk": "^1.1.1"
+  }
+}
