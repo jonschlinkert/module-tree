@@ -173,6 +173,10 @@ Build a tree from module dependencies using [archy](https://github.com/substack/
 * `options` **{Object}**
 * `returns` **{Object}**
 
+## Related projects
+
+[normalize-pkg](https://www.npmjs.com/package/normalize-pkg): Normalize values in package.json. | [homepage](https://github.com/jonschlinkert/normalize-pkg/)
+
 ## Generate docs
 
 Generate readme and API documentation with [verb](https://github.com/verbose/verb):

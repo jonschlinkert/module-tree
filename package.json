@@ -49,6 +49,9 @@
     "plugins": [
       "gulp-format-md"
     ],
+    "related": {
+      "list": ["normalize-pkg"]
+    },
     "reflinks": [
       "verb",
       "glob-object",
