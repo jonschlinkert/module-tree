@@ -1,0 +1,61 @@
+{
+  "name": "module-tree",
+  "description": "Create a visual tree of module dependencies, optionally passing a regex or glob pattern to limit the result to names with that pattern.",
+  "version": "0.1.0",
+  "homepage": "https://github.com/jonschlinkert/module-tree",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "jonschlinkert/module-tree",
+  "bugs": {
+    "url": "https://github.com/jonschlinkert/module-tree/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "bin": {
+    "tree": "cli.js"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "dependencies": {
+    "ansi-colors": "^0.1.0",
+    "ansi-yellow": "^0.1.1",
+    "archy": "^1.0.0",
+    "define-property": "^0.2.5",
+    "get-value": "^2.0.3",
+    "glob-object": "^0.1.1",
+    "has-glob": "^0.1.1",
+    "minimist": "^1.2.0",
+    "stringify-keys": "^0.3.0",
+    "strip-color": "^0.1.0"
+  },
+  "devDependencies": {
+    "gulp-format-md": "^0.1.7"
+  },
+  "keywords": [
+    "pkg",
+    "tree"
+  ],
+  "verb": {
+    "run": true,
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "reflinks": [
+      "verb"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  }
+}
