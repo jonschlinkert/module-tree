@@ -1,5 +1,5 @@
 /*!
- * pkg-tree (https://github.com/jonschlinkert/pkg-tree)
+ * module-tree (https://github.com/jonschlinkert/module-tree)
  *
  * Copyright (c) 2016, Jon Schlinkert.
  * Licensed under the MIT License.
@@ -7,29 +7,27 @@
 
 'use strict';
 
-var fs = require('fs');
+var util = require('util');
 var path = require('path');
-var yellow = require('ansi-yellow');
-var archy = require('archy');
-var hasGlob = require('has-glob');
-var get = require('get-value');
-var define = require('define-property');
-var stringify = require('stringify-keys');
-var glob = require('glob-object');
+var utils = require('./utils');
 
-function find(dir, cwd) {
-  cwd = cwd || dir;
-  var pkgPath = path.resolve(dir, 'package.json');
-  var pkg = require(pkgPath);
-  var deps = pkg.dependencies || {};
-  var tree = {};
-  define(tree, 'pkg', pkg);
-
-  for (var key in deps) {
-    tree[key] = find(path.resolve(cwd, 'node_modules', key), cwd);
-  }
-  return tree;
-}
+/**
+ * Build an object, where dependencies represented properties and
+ * keys are module names.
+ *
+ * ```js
+ * {
+ *   'union-value': {
+ *     'get-value': {}
+ *   }
+ * }
+ * ```
+ * @name .buildTree
+ * @param {Object} `patterns` Glob pattern to pass to [glob-object][] for filtering packages.
+ * @param {Object} `options`
+ * @return {Object}
+ * @api public
+ */
 
 function buildTree(patterns, options) {
   if (typeof patterns !== 'string' && !Array.isArray(patterns)) {
@@ -42,10 +40,10 @@ function buildTree(patterns, options) {
 
   var pkg = require(path.resolve(cwd, 'package.json'));
   var obj = {};
-  obj[pkg.name] = find(cwd);
+  obj[pkg.name] = resolvePkg(cwd);
 
   if (patterns) {
-    var filtered = glob(patterns, obj);
+    var filtered = utils.glob(patterns, obj);
     if (!Object.keys(filtered).length) {
       throw new Error('Cannot find a match for: ' + patterns);
     }
@@ -54,54 +52,96 @@ function buildTree(patterns, options) {
   return obj;
 }
 
+/**
+ * Build an object that can be passed to [archy][], where dependencies
+ * are represented as `nodes`, and the name of each package is used
+ * as the `label`.
+ *
+ * ```js
+ * // results in an object like this
+ * { label: 'union-value',
+ *   nodes: [ { label: 'get-value', nodes: [] } ] }
+ * ```
+ * @name .buildNodes
+ * @param {Object} `tree`
+ * @param {Object} `options`
+ * @return {Object}
+ * @api public
+ */
+
 function buildNodes(tree, options) {
   options = options || {};
-  var nodes = [];
-  for (var key in tree) {
-    var obj = {};
-    var val = tree[key];
 
-    if (options.has && !isMatch(val.pkg, options.has)) {
-      continue;
+  function createNodes(t, opts) {
+    var nodes = [];
+    for (var key in t) {
+      var obj = {};
+      var val = t[key];
+      var pkg = val.pkg;
+      if (opts.version) {
+        key += '@' + pkg.version;
+      }
+      obj.label = color(key, opts);
+      obj.nodes = createNodes(val, opts);
+      nodes.push(obj);
     }
-
-    obj.label = highlight(key, options);
-    obj.nodes = buildNodes(val, options);
-    nodes.push(obj);
+    return nodes;
   }
-  return nodes;
+  var res = createNodes(tree, options);
+  return res[0];
 }
 
-function isMatch(pkg, obj) {
-  if (typeof obj.key === 'undefined') {
-    return true;
+function resolvePkg(dir, cwd) {
+  cwd = cwd || dir;
+  var pkgPath = path.resolve(dir, 'package.json');
+  var pkg = require(pkgPath);
+  var deps = pkg.dependencies || {};
+  var tree = {};
+  utils.define(tree, 'pkg', pkg);
+  for (var key in deps) {
+    tree[key] = resolvePkg(path.resolve(cwd, 'node_modules', key), cwd);
   }
-
-  return true;
-
-  // var val = get(pkg, obj.key);
-
-  // if (get(pkg, obj.key) !== obj.val) {
-  //   continue;
-  // }
+  return tree;
 }
 
-function highlight(key, options) {
+function color(key, options) {
   options = options || {};
-  if (typeof options.highlight === 'function') {
-    return options.highlight(key);
+  if (typeof options.color === false) {
+    return key;
   }
-  if (typeof options.highlight === 'string') {
-    var re = new RegExp(options.highlight);
-    return re.test(key) ? yellow(key) : key;
+  if (typeof options.color === 'function') {
+    return options.color(key);
   }
-  return key;
+  if (typeof options.color === 'string') {
+    var re = new RegExp(options.color);
+    return re.test(key) ? utils.yellow(key) : key;
+  }
+  return utils.yellow(key);
 }
+
+/**
+ * Build a tree from module dependencies using [archy][].
+ *
+ * @param {String|Array} `patterns` Glob patterns to pass to [glob-object][]
+ * @param {Object} `options`
+ * @return {Object}
+ * @api public
+ */
 
 module.exports = function(patterns, options) {
   var tree = buildTree(patterns, options);
-  var nodes = buildNodes(tree, options)[0];
-  return archy(nodes);
+  var nodes = buildNodes(tree, options);
+  return utils.archy(nodes);
 };
 
-module.exports.json = buildTree;
+/**
+ * Expose `.buildTree`
+ */
+
+module.exports.buildTree = buildTree;
+
+/**
+ * Expose `.buildNodes`
+ */
+
+module.exports.buildNodes = buildNodes;
