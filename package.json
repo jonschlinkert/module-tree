@@ -1,7 +1,7 @@
 {
   "name": "module-tree",
   "description": "Create a visual tree of module dependencies using archy. Optionally pass a glob pattern to limit the result to names with that pattern, or a regex to selectively highlight package names.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "homepage": "https://github.com/jonschlinkert/module-tree",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "jonschlinkert/module-tree",
