@@ -19,7 +19,7 @@
     "node": ">=0.10.0"
   },
   "bin": {
-    "mtree": "cli.js"
+    "module-tree": "cli.js"
   },
   "scripts": {
     "test": "mocha"

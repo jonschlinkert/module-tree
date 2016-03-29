@@ -52,6 +52,19 @@ function buildTree(patterns, options) {
   return obj;
 }
 
+function resolvePkg(dir, cwd) {
+  cwd = cwd || dir;
+  var pkgPath = path.resolve(dir, 'package.json');
+  var pkg = require(pkgPath);
+  var deps = pkg.dependencies || {};
+  var tree = {};
+  utils.define(tree, 'pkg', pkg);
+  for (var key in deps) {
+    tree[key] = resolvePkg(path.resolve(cwd, 'node_modules', key), cwd);
+  }
+  return tree;
+}
+
 /**
  * Build an object that can be passed to [archy][], where dependencies
  * are represented as `nodes`, and the name of each package is used
@@ -89,19 +102,6 @@ function buildNodes(tree, options) {
   }
   var res = createNodes(tree, options);
   return res[0];
-}
-
-function resolvePkg(dir, cwd) {
-  cwd = cwd || dir;
-  var pkgPath = path.resolve(dir, 'package.json');
-  var pkg = require(pkgPath);
-  var deps = pkg.dependencies || {};
-  var tree = {};
-  utils.define(tree, 'pkg', pkg);
-  for (var key in deps) {
-    tree[key] = resolvePkg(path.resolve(cwd, 'node_modules', key), cwd);
-  }
-  return tree;
 }
 
 function color(key, options) {
