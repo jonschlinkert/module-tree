@@ -4,22 +4,25 @@
   "version": "0.1.3",
   "homepage": "https://github.com/jonschlinkert/module-tree",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "contributors": [
+    "Jon Schlinkert (http://twitter.com/jonschlinkert)",
+    "Keith Williams (https://github.com/akileez)"
+  ],
   "repository": "jonschlinkert/module-tree",
   "bugs": {
     "url": "https://github.com/jonschlinkert/module-tree/issues"
   },
   "license": "MIT",
   "files": [
-    "index.js",
     "cli.js",
-    "utils.js"
+    "index.js"
   ],
   "main": "index.js",
-  "engines": {
-    "node": ">=0.10.0"
-  },
   "bin": {
     "module-tree": "cli.js"
+  },
+  "engines": {
+    "node": ">=0.10.0"
   },
   "scripts": {
     "test": "mocha"
@@ -37,6 +40,7 @@
     "mocha": "^2.4.5"
   },
   "keywords": [
+    "module",
     "pkg",
     "tree"
   ],
@@ -51,12 +55,15 @@
       "gulp-format-md"
     ],
     "related": {
-      "list": ["normalize-pkg"]
+      "list": [
+        "micromatch",
+        "normalize-pkg",
+        "stringify-object"
+      ]
     },
     "reflinks": [
-      "verb",
-      "glob-object",
-      "archy"
+      "archy",
+      "glob-object"
     ],
     "lint": {
       "reflinks": true

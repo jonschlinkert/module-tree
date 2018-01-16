@@ -1,8 +1,8 @@
 /*!
- * module-tree (https://github.com/jonschlinkert/module-tree)
+ * module-tree <https://github.com/jonschlinkert/module-tree>
  *
- * Copyright (c) 2016, Jon Schlinkert.
- * Licensed under the MIT License.
+ * Copyright (c) 2016-2018, Jon Schlinkert.
+ * Released under the MIT License.
  */
 
 'use strict';
