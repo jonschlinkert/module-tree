@@ -22,7 +22,7 @@
     "module-tree": "cli.js"
   },
   "engines": {
-    "node": ">=0.10.0"
+    "node": ">=6"
   },
   "scripts": {
     "test": "mocha"
@@ -30,14 +30,17 @@
   "dependencies": {
     "ansi-yellow": "^0.1.1",
     "archy": "^1.0.0",
-    "define-property": "^0.2.5",
-    "glob-object": "^0.1.2",
-    "lazy-cache": "^1.0.3",
-    "minimist": "^1.2.0"
+    "define-property": "^2.0.0",
+    "get-value": "^2.0.6",
+    "kind-of": "^6.0.2",
+    "micromatch": "^3.1.5",
+    "minimist": "^1.2.0",
+    "set-value": "^2.0.0",
+    "stringify-keys": "^0.3.0"
   },
   "devDependencies": {
-    "gulp-format-md": "^0.1.7",
-    "mocha": "^2.4.5"
+    "gulp-format-md": "^1.0.0",
+    "mocha": "^3.5.3"
   },
   "keywords": [
     "module",
@@ -56,14 +59,13 @@
     ],
     "related": {
       "list": [
-        "micromatch",
-        "normalize-pkg",
-        "stringify-object"
+        "normalize-pkg"
       ]
     },
     "reflinks": [
       "archy",
-      "glob-object"
+      "micromatch",
+      "stringify-keys"
     ],
     "lint": {
       "reflinks": true

@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 
-var pkgTree = require('./');
-var argv = require('minimist')(process.argv.slice(2), {
-  alias: { p: 'patterns', c: 'color', v: 'version' }
+const pkgTree = require('./');
+const options = require('minimist')(process.argv.slice(2), {
+  boolean: ['inclusive'],
+  default: {
+    inclusive: true
+  },
+  alias: {
+    i: 'inclusive',
+    p: 'pattern',
+    c: 'color',
+    v: 'version',
+    a: 'author'
+  }
 });
 
-var tree = pkgTree(argv.p, argv);
-console.log(tree);
+const res = pkgTree(options.pattern, options);
+console.log(res);

@@ -7,9 +7,20 @@
 
 'use strict';
 
-var util = require('util');
-var path = require('path');
-var utils = require('./utils');
+/**
+ * Module dependencies
+ */
+
+const fs = require('fs');
+const path = require('path');
+const archy = require('archy');
+const typeOf = require('kind-of');
+const define = require('define-property');
+const get = require('get-value');
+const set = require('set-value');
+const stringify = require('stringify-keys');
+const yellow = require('ansi-yellow');
+const mm = require('micromatch');
 
 /**
  * Build an object, where dependencies represented properties and
@@ -18,51 +29,69 @@ var utils = require('./utils');
  * ```js
  * {
  *   'union-value': {
- *     'get-value': {}
+ *     'get-value': {
+ *       pkg: [object] // package.json contents
+ *     }
  *   }
  * }
  * ```
  * @name .buildTree
- * @param {Object} `patterns` Glob pattern to pass to [glob-object][] for filtering packages.
+ * @param {Object} `pattern` Glob pattern to pass to [micromatch][] for filtering packages ([stringify-keys][] converts the object to an array of object paths, which is then filtered by micromatch)
  * @param {Object} `options`
  * @return {Object}
  * @api public
  */
 
-function buildTree(patterns, options) {
-  if (typeof patterns !== 'string' && !Array.isArray(patterns)) {
-    options = patterns;
-    patterns = null;
-  }
+function buildTree(pattern, options) {
+  const opts = createOptions(pattern, options);
+  const pkg = require(path.resolve(opts.cwd, 'package.json'));
+  pattern = opts.pattern;
 
-  options = options || {};
-  var cwd = options.cwd || process.cwd();
-
-  var pkg = require(path.resolve(cwd, 'package.json'));
-  var obj = {};
-  obj[pkg.name] = resolvePkg(cwd);
-
-  if (patterns) {
-    var filtered = utils.glob(patterns, obj);
-    if (!Object.keys(filtered).length) {
-      throw new Error('Cannot find a match for: ' + patterns);
+  const cache = {
+    tree: {},
+    seen: {},
+    missing: {},
+    find: [],
+    lookup: function(key) {
+      return key && this.seen[key];
     }
-    return filtered;
+  };
+
+  cache.tree = { [pkg.name]: resolvePkg(cache, opts.cwd) };
+
+  if (pattern) {
+    const isMatch = mm.matcher(pattern);
+    const result = {};
+
+    for (const key of stringify(cache.tree)) {
+      const segs = key.split('.');
+      let name = segs.pop();
+
+      if (isMatch(name)) {
+        var val = get(cache.tree, key);
+        if (opts.inclusive !== false) {
+          set(result, key, val);
+        }
+        set(result, `${key}.pkg`, val.pkg);
+
+        while (segs.length) {
+          copyPkg(result, cache, segs.join('.'));
+          segs.pop();
+        }
+      }
+    }
+
+    cache.tree = result;
   }
-  return obj;
+
+  return cache.tree;
 }
 
-function resolvePkg(dir, cwd) {
-  cwd = cwd || dir;
-  var pkgPath = path.resolve(dir, 'package.json');
-  var pkg = require(pkgPath);
-  var deps = pkg.dependencies || {};
-  var tree = {};
-  utils.define(tree, 'pkg', pkg);
-  for (var key in deps) {
-    tree[key] = resolvePkg(path.resolve(cwd, 'node_modules', key), cwd);
+function copyPkg(result, cache, name) {
+  const val = get(cache.tree, name).pkg;
+  if (val) {
+    set(result, `${name}.pkg`, val);
   }
-  return tree;
 }
 
 /**
@@ -85,53 +114,116 @@ function resolvePkg(dir, cwd) {
 function buildNodes(tree, options) {
   options = options || {};
 
-  function createNodes(t, opts) {
-    var nodes = [];
-    for (var key in t) {
-      var obj = {};
-      var val = t[key];
-      var pkg = val.pkg;
-      if (opts.version) {
-        key += '@' + pkg.version;
+  function createNodes(leaf, opts) {
+    const nodes = [];
+    for (const key in leaf) {
+      if (key === 'pkg') continue;
+      const obj = {};
+      const val = leaf[key];
+      const pkg = val.pkg;
+      if (!pkg) {
+        throw new Error('cannot get package for: ' + key);
       }
-      obj.label = color(key, opts);
+
+      let suffix = opts.version ? '@' + pkg.version : '';
+      if (opts.author) {
+        const auth = author(pkg);
+        suffix += auth ? ' (' + auth + ') ' : '';
+      }
+      obj.label = color(key + suffix, opts);
       obj.nodes = createNodes(val, opts);
       nodes.push(obj);
     }
+
     return nodes;
   }
-  var res = createNodes(tree, options);
-  return res[0];
+  return createNodes(tree, options)[0];
+}
+
+function resolvePkg(cache, dir, cwd) {
+  cwd = cwd || dir;
+  const pkgPath = path.resolve(dir, 'package.json');
+  const pkg = require(pkgPath);
+  const tree = {};
+  define(tree, 'pkg', pkg);
+  resolveDeps(cache, cwd, pkg, tree);
+  return tree;
+}
+
+function resolveDeps(cache, cwd, pkg, tree) {
+  const keys = Object.keys(pkg.dependencies || {}).concat(Object.keys(pkg.devDendencies || {}));
+
+  keys.forEach(function(key) {
+    const pkgPath = path.resolve(cwd, 'node_modules', key);
+    if (!fs.existsSync(pkgPath)) {
+      const fn = function(key) {
+        return (tree[key] = cache.seen[key]);
+      };
+      cache.missing[key] = function(o) {
+        tree[key] = o;
+      };
+      cache.find.push(fn);
+      return;
+    }
+
+    if (!cache.seen.hasOwnProperty(key)) {
+      cache.seen[key] = true;
+      tree[key] = resolvePkg(cache, pkgPath, cwd);
+    }
+  });
+}
+
+function author(pkg) {
+  if (typeOf(pkg.author) === 'object') {
+    return pkg.author.name;
+  }
+  return pkg.author || '';
 }
 
 function color(key, options) {
-  options = options || {};
-  if (typeof options.color === false) {
-    return key;
+  const col = options && options.color;
+  switch (typeOf(col)) {
+    case 'boolean':
+      return col ? yellow(key) : key;
+    case 'function':
+      return col(key);
+    case 'string':
+      return mm.isMatch(key, col) ? yellow(key) : key;
+    default: {
+      return yellow(key);
+    }
   }
-  if (typeof options.color === 'function') {
-    return options.color(key);
+}
+
+function createOptions(pattern, options) {
+  if (typeof pattern !== 'string' && !Array.isArray(pattern)) {
+    options = pattern || options;
+    pattern = null;
   }
-  if (typeof options.color === 'string') {
-    var re = new RegExp(options.color);
-    return re.test(key) ? utils.yellow(key) : key;
+
+  const defaults = { pattern: pattern, cwd: process.cwd(), color: false };
+  const opts = Object.assign({}, defaults, options);
+
+  if (opts.pattern && !opts.color) {
+    opts.color = opts.pattern;
   }
-  return utils.yellow(key);
+  return opts;
 }
 
 /**
  * Build a tree from module dependencies using [archy][].
  *
- * @param {String|Array} `patterns` Glob patterns to pass to [glob-object][]
+ * @param {Object} `pattern` Glob pattern to pass to [micromatch][] for filtering packages ([stringify-keys][] converts the object to an array of object paths, which is then filtered by micromatch)
  * @param {Object} `options`
  * @return {Object}
  * @api public
  */
 
-module.exports = function(patterns, options) {
-  var tree = buildTree(patterns, options);
-  var nodes = buildNodes(tree, options);
-  return utils.archy(nodes);
+module.exports = function(pattern, options) {
+  const opts = createOptions(pattern, options);
+  const tree = buildTree(opts);
+  const nodes = buildNodes(tree, opts);
+  return archy(nodes);
 };
 
 /**
